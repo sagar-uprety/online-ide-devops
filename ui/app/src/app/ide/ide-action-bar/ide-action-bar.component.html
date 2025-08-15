@@ -1,0 +1,12 @@
+<div class="ide-action-bar__container" nz-row>
+    <button nz-button
+            nzType="default"
+            [disabled]="!currentFile"
+            (click)="saveFile()">Save
+    </button>
+    <button nz-button
+            nzType="primary"
+            [disabled]="unsavedState || !currentFile || currentFile.code.trim() === ''"
+            (click)="compileFile()">Compile
+    </button>
+</div>

@@ -1,0 +1,88 @@
+services:
+  discoveryserver:
+    build:
+      dockerfile: Dockerfile
+      context: ./discoveryserver
+    image: online-ide/discoveryserver:latest
+    restart: always
+    ports:
+      - 8761:8761
+
+  gateway:
+    build:
+      dockerfile: Dockerfile
+      context: ./gateway
+    image: online-ide/gateway:latest
+    environment:
+      # - EUREKA_SERVER=http://discoveryserver:8761/eureka
+
+      # usually, one would let the services figure these out themselves
+      # this is here only to help you get up and running quickly
+      - OAUTH_CLIENT_ID=272f940bf2fc68e17f8942ba00551cd4bd64970cc844622df0fad90087a5a018
+      - OAUTH_CLIENT_SECRET=gloas-4beacc367767409ce283a3d46c027309af202ec928cddf8bdb441f12b889c1eb
+    depends_on:
+      - discoveryserver
+    restart: always
+    ports:
+      - 8080:7000
+
+  compiler:
+    build:
+      dockerfile: Dockerfile
+      context: ./compiler
+    image: online-ide/compiler:latest
+    # environment:
+    #   - EUREKA_SERVER=http://discoveryserver:8761/eureka
+    restart: always
+    depends_on:
+      - discoveryserver
+
+  project:
+    build:
+      dockerfile: Dockerfile
+      context: ./project
+    image: online-ide/project:latest
+    environment:
+      # - EUREKA_SERVER=http://discoveryserver:8761/eureka
+      - JDBC_URL=jdbc:postgresql://project-db:5432/project_db?user=admin&password=password
+      - OAUTH_CLIENT_ID=272f940bf2fc68e17f8942ba00551cd4bd64970cc844622df0fad90087a5a018
+      - OAUTH_CLIENT_SECRET=gloas-4beacc367767409ce283a3d46c027309af202ec928cddf8bdb441f12b889c1eb
+    restart: always
+    depends_on:
+      - discoveryserver
+      - project-db
+
+  project-db:
+    image: postgres:9.6
+    restart: always
+    environment:
+      - POSTGRES_DB=project_db
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=admin
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  ui:
+    build:
+      dockerfile: Dockerfile
+      context: ./ui
+    image: online-ide/ui:latest
+    # environment:
+    #   - EUREKA_SERVER=http://discoveryserver:8761/eureka
+    restart: always
+    depends_on:
+      - discoveryserver
+
+  dark-mode:
+    build:
+      dockerfile: Dockerfile
+      context: ./dark-mode
+    image: online-ide/dark-mode:latest
+    # environment:
+    #   - EUREKA_SERVER=http://discoveryserver:8761/eureka
+    restart: always
+    depends_on:
+      - discoveryserver
+
+volumes:
+  postgres-data:

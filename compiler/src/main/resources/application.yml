@@ -1,0 +1,5 @@
+server:
+  port: ${PORT:6000}
+spring:
+  application:
+    name: compiler-service

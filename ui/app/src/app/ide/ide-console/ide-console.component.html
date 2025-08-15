@@ -1,0 +1,9 @@
+<div class="ide-console__container">
+    <nz-tabset>
+        <nz-tab nzTitle="Output">
+            <div class="ide-console__log">
+                <pre>{{lastOutput ? (lastOutput.stderr ? lastOutput.stderr : lastOutput.stdout) : ''}}</pre>
+            </div>
+        </nz-tab>
+    </nz-tabset>
+</div>

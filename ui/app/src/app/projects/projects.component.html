@@ -1,0 +1,51 @@
+<nz-content class="projects__container"
+            nz-row
+            nzType="flex"
+            nzJustify="center"
+            nzAlign="middle">
+    <div nz-col class="projects__table">
+        <button nz-button
+                nzType="default"
+                nzShape="circle"
+                [nz-tooltip]="'Logout'"
+                (click)="authService.logout()"><i nz-icon nzType="logout"></i></button>
+        <h1>Project Management</h1>
+        <button nz-button
+                class="projects__add-button"
+                (click)="createProject()"
+                nzType="primary">Add Project
+        </button>
+        <nz-table #editRowTable nzBordered [nzData]="projects" [nzPageSize]="5">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Users</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let data of editRowTable.data"
+                class="editable-row">
+                <td>{{data.id}}</td>
+                <td>
+                    <div class="editable-cell" *ngIf="editId !== data.id; else editTpl">
+                        <div class="editable-cell-value-wrap" (click)="startEdit(data.id, $event)">
+                            {{ data.name }}
+                        </div>
+                    </div>
+                    <ng-template #editTpl>
+                        <input type="text" nz-input [(ngModel)]="data.name" (blur)="updateProject(data)"/>
+                    </ng-template>
+                </td>
+                <td>{{ data.userIds.length }}</td>
+                <td>
+                    <a (click)="selectProject(data)"><b>Open</b></a>
+                    <nz-divider nzType="vertical"></nz-divider>
+                    <a nz-popconfirm nzTitle="Sure to delete?" (nzOnConfirm)="deleteProject(data)">Delete</a>
+                </td>
+            </tr>
+            </tbody>
+        </nz-table>
+    </div>
+</nz-content>

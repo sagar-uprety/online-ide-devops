@@ -1,0 +1,8 @@
+<ngx-monaco-editor style="height: 100%"
+                   #editor
+                   *ngIf="currentFile"
+                   [options]="editorOptions"
+                   [(ngModel)]="currentFile.code"
+                   (ngModelChange)="onChange($event)"
+                   (onInit)="onInit($event)"
+                   [disabled]="currentFile === undefined || currentFile === null"></ngx-monaco-editor>

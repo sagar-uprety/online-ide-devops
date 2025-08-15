@@ -1,0 +1,5 @@
+server:
+  port: ${PORT:5000}
+spring:
+  application:
+    name: dark-mode-service

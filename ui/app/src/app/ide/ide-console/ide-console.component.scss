@@ -1,0 +1,10 @@
+.ide-console__container {
+    width: calc(100% - 200px);
+    height: 250px;
+}
+
+.ide-console__log {
+    height: 100%;
+    overflow-y: scroll;
+    padding: 8px;
+}

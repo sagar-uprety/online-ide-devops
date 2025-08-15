@@ -1,0 +1,22 @@
+<nz-content class="home__container"
+            nz-row
+            nzType="flex"
+            nzJustify="center"
+            nzAlign="middle">
+    <div nz-col>
+        <h1>Welcome to the OnlineIDE</h1>
+        <h3>A project for the Practical Course: Container Security (TUM)</h3>
+        <button nz-button
+                *ngIf="!(authService.authenticated | async)"
+                (click)="authService.login();"
+                class="login-form-button"
+                [nzType]="'primary'">Login with GitLab LRZ
+        </button>
+        <button nz-button
+                *ngIf="authService.authenticated | async"
+                (click)="authService.logout()"
+                class="login-form-button"
+                [nzType]="'primary'">Logout
+        </button>
+    </div>
+</nz-content>

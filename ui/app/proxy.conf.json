@@ -1,0 +1,17 @@
+[
+    {
+        "context": [
+            "/auth",
+            "/project",
+            "/file",
+            "/compile",
+            "/login",
+            "/logout",
+            "/dark-mode"
+        ],
+        "target": "http://localhost:7000",
+        "logLevel": "debug",
+        "secure": false,
+        "ws": true
+    }
+]

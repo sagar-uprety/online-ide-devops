@@ -1,0 +1,7 @@
+server:
+  port: ${PORT:4000}
+  servlet:
+    contextPath: /ui
+spring:
+  application:
+    name: ui-service

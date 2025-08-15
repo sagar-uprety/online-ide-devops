@@ -1,0 +1,72 @@
+<div class="ide-file-list__container">
+    <h3 nz-title class="ide-file-list__title">{{currentProject?.name}}</h3>
+
+    <ul nz-menu
+        nzTheme="dark"
+        nzMode="inline"
+        *ngIf="files && files.length > 0">
+        <li nz-menu-item
+            [nzSelected]="currentFile && currentFile.id === file.id"
+            (click)="selectCurrentFile(file)"
+            (contextmenu)="contextMenu($event, menu, file)"
+            *ngFor="let file of files">
+            <i nz-icon nzType="file"></i>
+            <span>{{file.fileName}}</span>
+        </li>
+    </ul>
+
+    <nz-dropdown-menu #menu="nzDropdownMenu">
+        <ul nz-menu *ngIf="contextMenuFile">
+            <b style="padding: 0 2px;">{{contextMenuFile.fileName}}</b>
+            <li nz-menu-item (click)="updateFileIsVisible = true">Rename</li>
+            <li nz-menu-item (click)="deleteFile()">Delete</li>
+        </ul>
+    </nz-dropdown-menu>
+
+    <div class="ide-file-list__action-button"
+         nz-row nzType="flex" nzJustify="space-around" nzAlign="middle">
+        <div nz-col>
+            <button nz-button [nzType]="'default'" (click)="newFileIsVisible = true"><span>New File</span></button>
+        </div>
+    </div>
+    <div class="ide-file-list__action-button"
+         nz-row nzType="flex" nzJustify="space-around" nzAlign="middle">
+        <div nz-col>
+            <button nz-button [nzType]="'primary'" (click)="shareIsVisible = true"><span>Share Project</span></button>
+        </div>
+    </div>
+    <div class="ide-file-list__user-list"
+         nz-row nzType="flex"
+         *ngIf="currentProject">
+        <div class="ide-file-list__user-list-item"
+             *ngFor="let uid of currentProject.userIds">
+            <nz-avatar nzText="{{uid.charAt(0)}}" [nz-tooltip]="uid"></nz-avatar>
+        </div>
+    </div>
+
+    <nz-modal [(nzVisible)]="updateFileIsVisible"
+              nzTitle="Rename file"
+              (nzOnOk)="updateFile()"
+              (nzOnCancel)="updateFileIsVisible = false">
+        <input nz-input
+               *ngIf="contextMenuFile"
+               placeholder="Filename"
+               [(ngModel)]="contextMenuFile.fileName"/>
+    </nz-modal>
+    <nz-modal [(nzVisible)]="newFileIsVisible"
+              nzTitle="New file"
+              (nzOnOk)="createFile()"
+              (nzOnCancel)="newFileIsVisible = false">
+        <input nz-input
+               placeholder="New file"
+               [(ngModel)]="newFileName"/>
+    </nz-modal>
+    <nz-modal [(nzVisible)]="shareIsVisible"
+              nzTitle="Share Project"
+              (nzOnOk)="shareProject()"
+              (nzOnCancel)="shareIsVisible = false">
+        <input nz-input
+               placeholder="Username"
+               [(ngModel)]="newUsername"/>
+    </nz-modal>
+</div>

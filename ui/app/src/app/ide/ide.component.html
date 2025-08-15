@@ -1,0 +1,35 @@
+<nz-sider nzWidth="200px"
+          class="ide__sider"
+          nzTheme="dark">
+    <div class="logo" nz-row>
+        <img src="assets/logo.png" height="48px">
+    </div>
+    <div
+        class="ide__sider-actions"
+        nz-row
+        nzType="flex"
+        nzJustify="center"
+        nzAlign="middle">
+        <button nz-button
+                (click)="closeIde()"
+                nzType="primary"><i nz-icon nzType="left"></i>Back
+        </button>
+        <button nz-button
+                [nz-tooltip]="'Logout'"
+                nzType="default"
+                nzShape="circle"
+                (click)="authService.logout()"><i nz-icon nzType="logout"></i></button>
+    </div>
+    <ide-file-list></ide-file-list>
+</nz-sider>
+<nz-layout class="right-layout">
+    <nz-header>
+        <ide-action-bar></ide-action-bar>
+    </nz-header>
+    <div class="ide__editor">
+        <ide-editor></ide-editor>
+    </div>
+    <nz-footer>
+        <ide-console></ide-console>
+    </nz-footer>
+</nz-layout>

@@ -1,0 +1,31 @@
+server:
+  port: ${PORT:8000}
+spring:
+  application:
+    name: project-service
+  datasource:
+    name: ${POSTGRES_DB:project_db}
+    username: ${POSTGRES_USER:admin}
+    password: ${POSTGRES_PASSWORD:password}
+    url: ${JDBC_URL:}
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQL9Dialect
+        jdbc.lob.non_contextual_creation: true
+    hibernate:
+      ddl-auto: update
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+security:
+  oauth2:
+    client:
+      clientId: ${OAUTH_CLIENT_ID}
+      clientSecret: ${OAUTH_CLIENT_SECRET}
+    resource:
+      userInfoUri: https://gitlab.lrz.de/api/v4/user
+      preferTokenInfo: false
+database.port: 5432

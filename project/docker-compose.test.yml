@@ -1,0 +1,10 @@
+version: "3.6"
+services:
+  project-pgsql:
+    image: postgres:9.6
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-project_db}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_USER=${POSTGRES_USER:-admin}

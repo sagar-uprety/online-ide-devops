@@ -1,0 +1,52 @@
+.logo {
+    height: 32px;
+    margin: 16px;
+}
+
+nz-sider {
+    overflow: auto;
+    height: 100%;
+    position: fixed;
+    left: 0;
+
+    &.ide__sider {
+        .ide__sider-actions {
+            button {
+                margin: 8px;
+            }
+        }
+    }
+}
+
+.right-layout {
+    margin-left: 200px;
+}
+
+$header-height: 60px;
+nz-header {
+    background: #fff;
+    padding: 0;
+    position: fixed;
+    height: $header-height;
+    width: 100%;
+    top: 0;
+}
+
+$footer-height: 250px;
+nz-footer {
+    position: fixed;
+    width: 100%;
+    height: $footer-height;
+    bottom: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.ide__editor {
+    padding-top: $header-height;
+    padding-bottom: $footer-height;
+    height: 100vh;
+}
+
+
+
