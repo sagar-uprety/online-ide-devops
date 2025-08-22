@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: maintainer-binding
+  namespace: online-ide
+subjects:
+- kind: Group
+  name: maintainer-group
+  namespace: online-ide
+roleRef:
+  kind: Role
+  name: maintainer
+  apiGroup: rbac.authorization.k8s.io
