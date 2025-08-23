@@ -1,0 +1,44 @@
+# Enable ambient mesh mode
+pilot:
+  env:
+    PILOT_ENABLE_AMBIENT: true
+  
+  # Resource constraints for security and stability
+  resources:
+    requests:
+      cpu: 30m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+
+# Use distroless images for security
+global:
+  variant: "distroless"
+  
+  # Disable privileged containers
+  proxy:
+    privileged: false
+    
+    # Resource constraints for proxies
+    resources:
+      requests:
+        cpu: 10m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+  
+  waypoint:
+      # Resources for the waypoint proxy.
+      resources:
+        requests:
+          cpu: 30m
+          memory: 128Mi
+        limits:
+          cpu: 100m
+          memory: 1Gi
+
+# Disable sidecar injection for ambient
+sidecarInjectorWebhook:
+  enableNamespacesByDefault: false

@@ -1,0 +1,51 @@
+# Use distroless images for security
+global:
+  variant: "distroless"
+  platform: "gke" 
+
+# Enable ambient mesh support
+ambient:
+  enabled: true
+  dnsCapture: true
+  ipv6: false
+  enablementSelectors: 
+    - podSelector:
+        matchLabels: {istio.io/dataplane-mode: ambient}
+    - podSelector:
+        matchExpressions:
+        - { key: istio.io/dataplane-mode, operator: NotIn, values: [none] }
+      namespaceSelector:
+        matchLabels: {istio.io/dataplane-mode: ambient}
+
+# Resource constraints for security
+resources:
+  requests:
+    cpu: 30m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+# Security context
+seccompProfile:
+  type: RuntimeDefault
+
+seLinuxOptions:
+  type: RuntimeDefault
+
+# Repair pods automatically for resilience
+repair:
+  enabled: true
+  repairPods: true
+  deletePods: false
+  labelPods: false
+
+# Zero-downtime updates
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+
+# Exclude system namespace
+excludeNamespaces:
+  - kube-system

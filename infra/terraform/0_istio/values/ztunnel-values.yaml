@@ -1,0 +1,41 @@
+# Simple and secure ztunnel configuration for ambient mesh
+
+# Use distroless images for security
+variant: "distroless"
+
+# Resource constraints for security and stability
+resources:
+  requests:
+    cpu: 30m
+    memory: 256Mi
+  limits:
+    cpu: 200m
+    memory: 512Mi
+
+# Security context
+seLinuxOptions:
+  type: RuntimeDefault
+
+# Prometheus monitoring
+podAnnotations:
+  prometheus.io/port: "15020"
+  prometheus.io/scrape: "true"
+
+# Zero-downtime updates
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# System tolerations for node-level deployment
+tolerations:
+  - effect: NoSchedule
+    operator: Exists
+  - key: CriticalAddonsOnly
+    operator: Exists
+  - effect: NoExecute
+    operator: Exists
+
+logLevel: debug
+logAsJson: true
