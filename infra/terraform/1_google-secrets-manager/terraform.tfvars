@@ -1,0 +1,5 @@
+project_id = "online-ide-470520"
+region     = "europe-west3"
+zone       = "europe-west3-a"
+gke_cluster_name = "online-ide-cluster"
+gke_cluster_location = "europe-west1-b"
