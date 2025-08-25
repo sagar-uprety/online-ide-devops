@@ -1,0 +1,5 @@
+project_id = "online-ide-470520"
+gcp_secret_name = "gcp-secret-manager-creds"
+gcp_secret_key = "key.json"
+gke_cluster_name = "online-ide-cluster"
+gke_cluster_location = "europe-west1-b"
