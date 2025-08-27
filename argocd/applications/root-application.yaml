@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root-application
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.lrz.de/container-security-wizards/online-ide.git
+    targetRevision: main
+    path: argocd/applications
+    directory:
+      recurse: false
+      include: "*.yaml"
+      exclude: "root-application.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
