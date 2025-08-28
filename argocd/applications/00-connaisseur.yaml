@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: connaisseur
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  project: default
+  sources:
+    - repoURL: https://sse-secure-systems.github.io/connaisseur/charts
+      chart: connaisseur
+      targetRevision: 2.8.4
+      helm:
+        valueFiles:
+          - $values/argocd/helm-values/connaisseur-values.yaml
+    - repoURL: https://gitlab.lrz.de/container-security-wizards/online-ide.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: connaisseur
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
