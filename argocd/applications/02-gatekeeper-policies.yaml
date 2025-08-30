@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gatekeeper-policies
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.lrz.de/container-security-wizards/online-ide.git
+    targetRevision: main
+    path: argocd/gatekeeper-policies
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: online-ide
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    managedNamespaceMetadata:
+      labels:
+        pod-security.kubernetes.io/enforce: baseline
+        pod-security.kubernetes.io/warn: restricted
+        istio.io/dataplane-mode: ambient
+        istio.io/use-waypoint: online-ide-waypoint
