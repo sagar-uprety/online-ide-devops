@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: compiler
+  namespace: online-ide
+  labels:
+    app: compiler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: compiler
+  template:
+    metadata:
+      labels:
+        app: compiler
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 2000
+        supplementalGroups: [2000]
+      serviceAccountName: compiler-sa
+      containers:
+        - name: compiler
+          image: gitlab.lrz.de:5005/container-security-wizards/online-ide/compiler:0eac8983
+          ports:
+            - containerPort: 6000
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      imagePullSecrets:
+        - name: gitlab-read
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: compiler-service
+  namespace: online-ide
+spec:
+  selector:
+    app: compiler
+  ports:
+    - protocol: TCP
+      port: 6000
+      targetPort: 6000

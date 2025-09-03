@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: project
+  namespace: online-ide
+  labels:
+    app: project
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: project
+  template:
+    metadata:
+      labels:
+        app: project
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 2000
+        supplementalGroups:
+          - 2000
+      serviceAccountName: project-sa
+      containers:
+        - name: project
+          image: gitlab.lrz.de:5005/container-security-wizards/online-ide/project:0eac8983
+          ports:
+            - containerPort: 8000
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - "ALL"
+          env:
+            - name: OAUTH_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: oide-secrets
+                  key: CLIENT_ID
+            - name: OAUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: oide-secrets
+                  key: CLIENT_SECRET
+            - name: JDBC_URL
+              valueFrom:
+                secretKeyRef:
+                  name: oide-secrets
+                  key: JDBC_URL
+      imagePullSecrets:
+        - name: gitlab-read
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: project-service
+  namespace: online-ide
+spec:
+  selector:
+    app: project
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000

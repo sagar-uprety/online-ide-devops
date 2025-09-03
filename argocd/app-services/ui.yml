@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ui
+  namespace: online-ide
+  labels:
+    app: ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ui
+  template:
+    metadata:
+      labels:
+        app: ui
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 2000
+        supplementalGroups: [2000]
+      serviceAccountName: ui-sa
+      containers:
+        - name: ui
+          image: gitlab.lrz.de:5005/container-security-wizards/online-ide/ui:0eac8983
+          ports:
+            - containerPort: 4000
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      imagePullSecrets:
+        - name: gitlab-read
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui-service
+  namespace: online-ide
+spec:
+  selector:
+    app: ui
+  ports:
+    - protocol: TCP
+      port: 4000
+      targetPort: 4000

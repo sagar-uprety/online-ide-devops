@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dark-mode
+  namespace: online-ide
+  labels:
+    app: dark-mode
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dark-mode
+  template:
+    metadata:
+      labels:
+        app: dark-mode
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 2000
+        supplementalGroups: [2000]
+      serviceAccountName: dark-mode-sa
+      containers:
+        - name: dark-mode
+          image: gitlab.lrz.de:5005/container-security-wizards/online-ide/dark-mode:0eac8983
+          ports:
+            - containerPort: 5000
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      imagePullSecrets:
+        - name: gitlab-read
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dark-mode-service
+  namespace: online-ide
+spec:
+  selector:
+    app: dark-mode
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000

@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: oide-pvc
+  namespace: online-ide
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: project-db
+  namespace: online-ide
+  labels:
+    app: oide-db
+spec:
+  serviceName: db-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oide-db
+  template:
+    metadata:
+      labels:
+        app: oide-db
+    spec:
+      initContainers:
+        - name: init-db-root
+          image: "docker.io/busybox:latest"
+          command: ["sh", "-c", "mkdir -p /var/lib/postgresql/data/pgdata && chown -R 999:999 /var/lib/postgresql/data"]
+          volumeMounts:
+            - name: postgres-vol
+              mountPath: "/var/lib/postgresql/data"
+      securityContext:
+        fsGroup: 999
+      serviceAccountName: db-sa
+      containers:
+        - name: project-db
+          image: "docker.io/postgres:9.6"
+          securityContext:
+            runAsUser: 999 # postgres user in container
+            runAsGroup: 999
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: postgres-vol
+              mountPath: "/var/lib/postgresql/data"
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: oide-secrets
+                  key: POSTGRES_DB
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oide-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: oide-secrets
+                  key: POSTGRES_USER
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
+      volumes:
+        - name: postgres-vol
+          persistentVolumeClaim:
+            claimName: oide-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-service
+  namespace: online-ide
+spec:
+  selector:
+    app: oide-db
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
