@@ -1,0 +1,36 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: ImageRegistry 
+metadata:
+  name: image-registry-constraint
+spec:
+  match:
+    kinds:
+      - apiGroups: ["apps"]
+        kinds: ["Deployment"]
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: online-ide
+  parameters:
+    repos:
+      # Docker Hub Registry (covers redis, openpolicyagent/gatekeeper, etc.)
+      - "docker.io/"
+      # GitHub Container Registry
+      - "ghcr.io/"
+      # External Secrets registry
+      - "oci.external-secrets.io/"
+      # Open Policy Agent images
+      - "openpolicyagent/"
+      # Quay.io images
+      - "quay.io/"
+      # Amazon ECR Public Gallery
+      - "ecr-public.aws.com/"
+      # Your private GitLab registry
+      - "gitlab.lrz.de:5005/container-security-wizards/online-ide/"
+      # Google Artifact Registry
+      - "europe-west1-artifactregistry.gcr.io/"
+      # Google Kubernetes Engine container registry
+      - "gke.gcr.io/"
+      # Kubernetes official registry
+      - "registry.k8s.io/" 
