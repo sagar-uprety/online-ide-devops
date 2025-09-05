@@ -1,0 +1,154 @@
+kubernetes:
+  deployment:
+    image:
+      repository: docker.io/securesystemsengineering/connaisseur
+    pullPolicy: IfNotPresent
+    replicasCount: 1
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 512Mi
+      requests:
+        cpu: 30m
+        memory: 128Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 10001
+      runAsGroup: 20001
+      seccompProfile:
+        type: RuntimeDefault
+  service:
+    type: ClusterIP
+    port: 443
+  webhook:
+    failurePolicy: Ignore
+    reinvocationPolicy: Never
+  redis:
+    image:
+      repository: redis
+      tag: 7
+    pullPolicy: Always
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 999
+      runAsGroup: 999
+      seccompProfile:
+        type: RuntimeDefault
+application:
+  validators:
+    - name: allow
+      type: static
+      approve: true
+    - name: deny
+      type: static
+      approve: false
+    - name: dockerhub
+      type: notaryv1
+      host: notary.docker.io
+      trustRoots:
+        - name: sse # root from sse
+          key: |
+            -----BEGIN PUBLIC KEY-----
+            MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEsx28WV7BsQfnHF1kZmpdCTTLJaWe
+            d0CA+JOi8H4REuBaWSZ5zPDe468WuOJ6f71E7WFg3CVEVYHuoZt2UYbN/Q==
+            -----END PUBLIC KEY-----
+    - name: gitlab-cosign # custom validator for gitlab cosign signatures
+      type: cosign
+      auth:
+        secretName: gitlab-read # Reference to the reflected secret
+      trustRoots:
+        - name: gitlab-cosign-key
+          key: |
+            -----BEGIN PUBLIC KEY-----
+            MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEmAHwhkvYw4+UccEqXNV5CZ+NfeVh
+            Mq73hWi2tlVvkMIvkj2NyRePcxBuysZQ92XaChAI+/Ga0Xbv+t4mePtt2g==
+            -----END PUBLIC KEY-----
+  policy:
+    # --- allow for infra services ---
+    - pattern: "docker.io/emberstack/kubernetes-reflector:*"
+      validator: allow
+    - pattern: "docker.io/falcosecurity/*:*"
+      validator: allow
+    - pattern: "docker.io/istio/*:*"
+      validator: allow
+    - pattern: "ghcr.io/stakater/reloader:*"
+      validator: allow
+    - pattern: "oci.external-secrets.io/external-secrets/external-secrets:*"
+      validator: allow
+    - pattern: "openpolicyagent/gatekeeper:*"
+      validator: allow
+    - pattern: "openpolicyagent/gatekeeper-crds:*"
+      validator: allow
+    - pattern: "curlimages/curl:*"
+      validator: allow
+    - pattern: "quay.io/argoproj/argocd:*"
+      validator: allow
+    - pattern: "ecr-public.aws.com/docker/library/redis:*"
+      validator: allow
+    - pattern: "ghcr.io/dexidp/dex:*" 
+      validator: allow
+    - pattern: "docker.io/library/redis:*"
+      validator: allow
+    - pattern: "docker.io/library/postgres:*"
+      validator: allow
+    - pattern: "docker.io/library/busybox:*"
+      validator: allow
+
+    # --- Allow GKE & Kubernetes System Images ---
+    - pattern: "europe-west1-artifactregistry.gcr.io/gke-release/gke-release/*:*" 
+      validator: allow
+
+    # GKE/K8s componentes images
+    - pattern: "gke.gcr.io/*:*"
+      validator: allow
+    - pattern: "registry.k8s.io/*:*"
+      validator: allow
+
+   # --- Require Signatures for Internal GitLab Images ---
+    - pattern: "gitlab.lrz.de:5005/container-security-wizards/online-ide/*:*"
+      validator: gitlab-cosign
+      with:
+        trustRoot: gitlab-cosign-key
+        verifyInTransparencyLog: false
+
+    # Validate Connaisseur itself with SSE key
+    - pattern: "docker.io/securesystemsengineering/*:*"
+      validator: dockerhub
+      with:
+        trustRoot: sse
+
+    # --- Default Deny ---
+    - pattern: "*:*"
+      validator: deny
+
+  features:
+    automaticUnchangedApproval: false
+    automaticChildApproval: true
+    detectionMode: false # Enable detection mode to allow temporary upgrades without signature validation
+    namespacedValidation:
+      mode: ignore
+    resourceValidationMode: "all"
+    cache:
+      expirySeconds: 30
+      cacheErrors: true
+  logLevel: info
+  logFormat: json-pretty
