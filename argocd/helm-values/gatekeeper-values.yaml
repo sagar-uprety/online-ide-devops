@@ -1,0 +1,55 @@
+# Gatekeeper configuration
+replicaCount: 1
+
+image:
+  repository: openpolicyagent/gatekeeper
+  pullPolicy: Always
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Gatekeeper webhook configuration
+webhook:
+  failurePolicy: Fail
+  
+# Mutation webhook
+mutation:
+  enabled: true
+  
+# Validation webhook  
+validation:
+  enabled: true
+
+# Enable constraint enforcement
+constraintViolationsLimit: 20
+
+# Enable audit functionality
+audit:
+  enabled: true
+  interval: 60s
+  constraintViolationsLimit: 20
+
+# Config for policy enforcement
+config:
+  validation:
+    traces:
+      - user:
+          kind:
+            group: "*"
+            version: "*"
+            kind: "*"
+      - kind:
+          group: "*"
+          version: "*"
+          kind: "*"
