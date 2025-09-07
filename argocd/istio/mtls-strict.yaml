@@ -1,0 +1,10 @@
+# Enable strict mTLS only for the online-ide namespace
+# This protects your application without affecting infrastructure services
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: online-ide-strict-mtls
+  namespace: online-ide
+spec:
+  mtls:
+    mode: STRICT
