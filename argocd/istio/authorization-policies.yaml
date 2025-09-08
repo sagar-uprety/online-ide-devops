@@ -1,0 +1,196 @@
+# L4: allow only gateway-sa + waypoint to reach project
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: project-ztunnel
+  namespace: online-ide
+spec:
+  selector:
+    matchLabels:
+      app: project
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/online-ide/sa/gateway-sa
+              - cluster.local/ns/online-ide/sa/online-ide-waypoint
+---
+# L7: restrict methods + paths
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: project-waypoint
+  namespace: online-ide
+spec:
+  targetRefs:
+    - kind: Service
+      name: project-service
+  action: ALLOW
+  rules:
+    - from:
+        # - source:
+        #     namespaces: ["online-ide"]
+        - source:
+            principals:
+              - cluster.local/ns/online-ide/sa/gateway-sa
+      to:
+        - operation:
+            methods: ["GET", "POST"]
+            paths: ["/project/"]
+        - operation:
+            methods: ["GET", "PUT", "DELETE", "OPTIONS"]
+            paths: ["/project/{*}"]
+        - operation:
+            methods: ["PUT"]
+            paths: ["/project/{*}/share"]
+        - operation:
+            methods: ["GET", "POST"]
+            paths: ["/project/{*}/file"]
+        - operation:
+            methods: ["PUT", "DELETE", "OPTIONS"]
+            paths: ["/file/{*}"]
+
+---
+# L4
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: ui-ztunnel
+  namespace: online-ide
+spec:
+  selector:
+    matchLabels:
+      app: ui
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/online-ide/sa/gateway-sa
+              - cluster.local/ns/online-ide/sa/online-ide-waypoint
+---
+# L7
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: ui-waypoint
+  namespace: online-ide
+spec:
+  targetRefs:
+    - kind: Service
+      name: ui-service
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/online-ide/sa/gateway-sa
+      # to:
+      # - operation:
+      #     methods: ["GET", "HEAD", "OPTIONS"]
+      #     paths: ["/ui/", "/ui/index.html", "/ui/{*}", "/ui/assets/{*}"]
+---
+# L4
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: compiler-ztunnel
+  namespace: online-ide
+spec:
+  selector:
+    matchLabels:
+      app: compiler
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/online-ide/sa/gateway-sa
+              - cluster.local/ns/online-ide/sa/online-ide-waypoint
+---
+# L7
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: compiler-waypoint
+  namespace: online-ide
+spec:
+  targetRefs:
+    - kind: Service
+      name: compiler-service
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/online-ide/sa/gateway-sa
+      to:
+        - operation:
+            methods: ["POST"]
+            paths: ["/compile/"]
+        - operation:
+            methods: ["GET"]
+            paths: ["/compile/langs"]
+        - operation:
+            methods: ["OPTIONS"]
+            paths: ["/compile/{**}"]
+---
+# L4
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: darkmode-ztunnel
+  namespace: online-ide
+spec:
+  selector:
+    matchLabels:
+      app: dark-mode
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/online-ide/sa/gateway-sa
+              - cluster.local/ns/online-ide/sa/online-ide-waypoint
+---
+# L7
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: darkmode-waypoint
+  namespace: online-ide
+spec:
+  targetRefs:
+    - kind: Service
+      name: dark-mode-service
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/online-ide/sa/gateway-sa
+      to:
+        - operation:
+            methods: ["GET", "OPTIONS"]
+            paths: ["/dark-mode/", "/dark-mode/toggle"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: db-access
+  namespace: online-ide
+spec:
+  selector:
+    matchLabels:
+      app: oide-db
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/online-ide/sa/online-ide-waypoint"
+              - "cluster.local/ns/online-ide/sa/project-sa"
+      to:
+        - operation:
+            ports: ["5432"]
