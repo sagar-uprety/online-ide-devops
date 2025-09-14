@@ -1,0 +1,348 @@
+stages:
+  - static-tests
+  - build
+  - deploy
+  - post-deploy-tests
+
+variables:
+  CONTAINER_PATH: "gitlab.lrz.de:5005/container-security-wizards/online-ide"
+
+default:
+  tags:
+    - azure-gitlab-runner
+
+# -------- Static Tests --------
+container-lint-ui:
+  stage: static-tests
+  image: hadolint/hadolint:v2.13.1-beta4-alpine
+  script:
+    - echo "Linting ./ui/Dockerfile..."
+    - hadolint ./ui/Dockerfile
+
+container-lint-gateway:
+  stage: static-tests
+  image: hadolint/hadolint:v2.13.1-beta4-alpine
+  script:
+    - echo "Linting ./gateway/Dockerfile..."
+    - hadolint ./gateway/Dockerfile
+
+container-lint-compiler:
+  stage: static-tests
+  image: hadolint/hadolint:v2.13.1-beta4-alpine
+  script:
+    - echo "Linting ./compiler/Dockerfile..."
+    - hadolint ./compiler/Dockerfile
+
+container-lint-project:
+  stage: static-tests
+  image: hadolint/hadolint:v2.13.1-beta4-alpine
+  script:
+    - echo "Linting ./project/Dockerfile..."
+    - hadolint ./project/Dockerfile
+
+container-lint-dark-mode:
+  stage: static-tests
+  image: hadolint/hadolint:v2.13.1-beta4-alpine
+  script:
+    - echo "Linting ./dark-mode/Dockerfile..."
+    - hadolint ./dark-mode/Dockerfile
+
+.dockerfile-policy-template: 
+  stage: static-tests
+  image:
+    name: openpolicyagent/conftest:latest
+    entrypoint: [""]
+  script:
+    - conftest test "${DOCKERFILE}" --all-namespaces
+
+dockerfile-policy-compiler:
+  extends: .dockerfile-policy-template
+  variables:
+    DOCKERFILE: "compiler/Dockerfile"
+
+dockerfile-policy-dark-mode:
+  extends: .dockerfile-policy-template
+  variables:
+    DOCKERFILE: "dark-mode/Dockerfile"
+
+dockerfile-policy-gateway:
+  extends: .dockerfile-policy-template
+  variables:
+    DOCKERFILE: "gateway/Dockerfile"
+
+dockerfile-policy-project:
+  extends: .dockerfile-policy-template
+  variables:
+    DOCKERFILE: "project/Dockerfile"
+
+dockerfile-policy-ui:
+  extends: .dockerfile-policy-template
+  variables:
+    DOCKERFILE: "ui/Dockerfile"
+
+# -------- Build ---------
+.container-build-template:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"gitlab.lrz.de:5005\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_JOB_TOKEN\"},\"https://index.docker.io/v1/\":{\"username\":\"$SHARED_DOCKER_HUB_USERNAME\",\"password\":\"$SHARED_DOCKER_HUB_PAT\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}/${CONTEXT_DIR}"
+      --dockerfile=Dockerfile
+      --destination="$CONTAINER_PATH/${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}"
+      --destination="$CONTAINER_PATH/${IMAGE_NAME}:latest"
+
+# -------- Cosign Signing --------
+.container-sign-template:
+  stage: build
+  image: alpine:3.22
+  needs: []
+  before_script:
+    - apk add --no-cache curl
+    - curl -O -L "https://github.com/sigstore/cosign/releases/download/v2.5.3/cosign-linux-amd64"
+    - mv cosign-linux-amd64 /usr/local/bin/cosign
+    - chmod +x /usr/local/bin/cosign
+  script:
+    - echo "$COSIGN_PRIVATE_KEY" | base64 -d > cosign.key
+    - export COSIGN_PASSWORD="$COSIGN_PASSWORD"
+    - echo "$CI_JOB_TOKEN" | cosign login gitlab.lrz.de:5005 --username "$CI_REGISTRY_USER" --password-stdin
+    - |
+      echo "Signing image: $CONTAINER_PATH/${IMAGE_NAME}:$CI_COMMIT_SHORT_SHA"
+      cosign sign --key cosign.key $CONTAINER_PATH/${IMAGE_NAME}:$CI_COMMIT_SHORT_SHA
+      echo "Successfully signed image: $CONTAINER_PATH/${IMAGE_NAME}:$CI_COMMIT_SHORT_SHA"
+
+container-build-ui:
+  extends: .container-build-template
+  variables:
+    CONTEXT_DIR: "ui"
+    IMAGE_NAME: "ui"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - ui/**
+
+container-sign-ui:
+  extends: .container-sign-template
+  needs: [container-build-ui]
+  variables:
+    IMAGE_NAME: "ui"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - ui/**
+
+container-build-gateway:
+  extends: .container-build-template
+  variables:
+    CONTEXT_DIR: "gateway"
+    IMAGE_NAME: "gateway"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - gateway/**
+
+container-sign-gateway:
+  extends: .container-sign-template
+  needs: [container-build-gateway]
+  variables:
+    IMAGE_NAME: "gateway"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - gateway/**
+
+container-build-compiler:
+  extends: .container-build-template
+  variables:
+    CONTEXT_DIR: "compiler"
+    IMAGE_NAME: "compiler"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - compiler/**
+
+container-sign-compiler:
+  extends: .container-sign-template
+  needs: [container-build-compiler]
+  variables:
+    IMAGE_NAME: "compiler"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - compiler/**
+
+container-build-project:
+  extends: .container-build-template
+  variables:
+    CONTEXT_DIR: "project"
+    IMAGE_NAME: "project"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - project/**
+
+container-sign-project:
+  extends: .container-sign-template
+  needs: [container-build-project]
+  variables:
+    IMAGE_NAME: "project"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - project/**
+
+container-build-dark-mode:
+  extends: .container-build-template
+  variables:
+    CONTEXT_DIR: "dark-mode"
+    IMAGE_NAME: "dark-mode"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - dark-mode/**
+
+container-sign-dark-mode:
+  extends: .container-sign-template
+  needs: [container-build-dark-mode]
+  variables:
+    IMAGE_NAME: "dark-mode"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - dark-mode/**
+
+# -------- Deploy --------
+update_manifest_and_commit:
+  stage: deploy
+  image: alpine:latest
+  needs:
+    - job: container-sign-ui
+      optional: true
+    - job: container-sign-gateway
+      optional: true
+    - job: container-sign-compiler
+      optional: true
+    - job: container-sign-project
+      optional: true
+    - job: container-sign-dark-mode
+      optional: true
+  before_script:
+    - apk add --no-cache bash git curl openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | base64 -d | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan gitlab.lrz.de >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+
+    - git config --global user.email "bot@gitlab.com"
+    - git config --global user.name "GitLab CI Bot"
+
+  script:
+    - |
+      if git diff --name-only HEAD~1 HEAD | grep -q "compiler/"; then
+        sed -i "s|image: .*compiler.*|image: ${CI_REGISTRY_IMAGE}/compiler:${CI_COMMIT_SHORT_SHA}|g" "argocd/app-services/compiler.yml"
+      fi
+    - |
+      if git diff --name-only HEAD~1 HEAD | grep -q "dark-mode/"; then
+        sed -i "s|image: .*dark-mode.*|image: ${CI_REGISTRY_IMAGE}/dark-mode:${CI_COMMIT_SHORT_SHA}|g" "argocd/app-services/dark-mode.yml"
+      fi
+    - |
+      if git diff --name-only HEAD~1 HEAD | grep -q "gateway/"; then
+       sed -i "s|image: .*gateway.*|image: ${CI_REGISTRY_IMAGE}/gateway:${CI_COMMIT_SHORT_SHA}|g" "argocd/app-services/gateway.yml"
+      fi
+    - |
+      if git diff --name-only HEAD~1 HEAD | grep -q "project/"; then
+       sed -i "s|image: .*project.*|image: ${CI_REGISTRY_IMAGE}/project:${CI_COMMIT_SHORT_SHA}|g" "argocd/app-services/project.yml"
+      fi
+    - |
+      if git diff --name-only HEAD~1 HEAD | grep -q "ui/"; then
+       sed -i "s|image: .*ui.*|image: ${CI_REGISTRY_IMAGE}/ui:${CI_COMMIT_SHORT_SHA}|g" "argocd/app-services/ui.yml"
+      fi
+
+    - |
+      if [ -z "$(git status --porcelain)" ]; then
+        echo "No changes to manifest files. Nothing to commit."
+      else
+        echo "Changes detected. Committing back to the repository..."
+        git add -A
+        git commit -m "ci: Update image tags"
+        git push git@gitlab.lrz.de:${CI_PROJECT_PATH}.git "HEAD:${CI_COMMIT_BRANCH}" -o ci.skip
+      fi
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - ui/**
+        - gateway/**
+        - compiler/**
+        - project/**
+        - dark-mode/**
+    - if: '$CI_COMMIT_BRANCH == "release"'
+      changes:
+        - ui/**
+        - gateway/**
+        - compiler/**
+        - project/**
+        - dark-mode/**
+
+# -------- Post-deploy Tests --------
+.container-lint-dockle-template:
+  stage: post-deploy-tests
+  image:
+    name: goodwithtech/dockle:latest
+    entrypoint: [""]
+  variables:
+    DOCKLE_AUTH_URL: gitlab.lrz.de:5005
+    DOCKLE_USERNAME: $CI_REGISTRY_USER
+    DOCKLE_PASSWORD: $CI_JOB_TOKEN
+  script:
+    - echo "Linting ${IMAGE_NAME} image..."
+    - dockle --exit-code 0 --exit-level fatal $CONTAINER_PATH/${IMAGE_NAME}:latest
+
+container-image-lint-ui:
+  extends: .container-lint-dockle-template
+  variables:
+    IMAGE_NAME: "ui"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - ui/**
+
+container-image-lint-gateway:
+  extends: .container-lint-dockle-template
+  variables:
+    IMAGE_NAME: "gateway"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - gateway/**
+
+container-image-lint-compiler:
+  extends: .container-lint-dockle-template
+  variables:
+    IMAGE_NAME: "compiler"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - compiler/**
+
+container-image-lint-project:
+  extends: .container-lint-dockle-template
+  variables:
+    IMAGE_NAME: "project"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - project/**
+
+container-image-lint-dark-mode:
+  extends: .container-lint-dockle-template
+  variables:
+    IMAGE_NAME: "dark-mode"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - dark-mode/**
